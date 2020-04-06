@@ -9,7 +9,7 @@ AFRAME.registerComponent('ui', {
     var rayEl = this.rayEl = document.createElement('a-entity');
     this.closed = true;
     this.isTooltipPaused = false;
-    this.colorStack = ['#272727', '#727272', '#FFFFFF', '#24CAFF', '#249F90', '#F2E646', '#EF2D5E'];
+    this.colorStack = ['#ff2e08', 'ff2e08', 'ff2e08', 'ff2e08', 'ff2e08', 'ff2e08', 'ff2e08'];
     this.bindMethods();
     this.colorHasChanged = true;
     this.highlightMaterials = {};
@@ -445,9 +445,6 @@ AFRAME.registerComponent('ui', {
     if (evt.detail.format !== 'obj' || !model.getObjectByName('brightnesscursor')) { return; }
 
     this.objects = {};
-    this.objects.brightnessCursor = model.getObjectByName('brightnesscursor');
-    this.objects.brightnessSlider = model.getObjectByName('brightness');
-    this.objects.brightnessSlider.geometry.computeBoundingBox();
     this.objects.previousPage = model.getObjectByName('brushprev');
     this.objects.nextPage = model.getObjectByName('brushnext');
 
@@ -521,7 +518,6 @@ AFRAME.registerComponent('ui', {
     this.initColorHistory();
     this.initBrushesMenu();
     this.setCursorTransparency();
-    this.updateColorUI();
     this.updateSizeSlider(this.el.getAttribute('brush').size);
   },
 
@@ -541,14 +537,11 @@ AFRAME.registerComponent('ui', {
 
   setCursorTransparency: function () {
     var hueCursor = this.objects.hueCursor;
-    var brightnessCursor = this.objects.brightnessCursor;
     var sizeCursor = this.objects.sizeCursor;
     sizeCursor.material.alphaTest = 0.5;
     hueCursor.material.alphaTest = 0.5;
-    brightnessCursor.material.alphaTest = 0.5;
     sizeCursor.material.transparent = true;
     hueCursor.material.transparent = true;
-    brightnessCursor.material.transparent = true;
   },
 
   loadBrushes: (function () {
@@ -741,7 +734,6 @@ AFRAME.registerComponent('ui', {
     if (!this.handEl || !this.objects) { return; }
     brush = this.handEl.getAttribute('brush');
     this.updateSizeSlider(brush.size);
-    this.updateColorUI();
     this.updateColorHistory();
     // this.updateBrushSelector(brush.brush);
   },
@@ -781,16 +773,6 @@ AFRAME.registerComponent('ui', {
 
     var scale = normalizedSize + 0.3;
     cursor.scale.set(scale, 1, scale);
-  },
-
-  updateColorUI: function () { 
-    // Update color wheel 
-    var angle = 30;  
-    var radius = 0.5 * this.colorWheelSize; 
-    var x = radius * Math.cos(angle); 
-    var y = radius * Math.sin(angle); 
-    this.objects.hueCursor.position.setX(x);  
-    this.objects.hueCursor.position.setZ(-y); 
   },
 
   updateBrushSelector: function (brush) {
