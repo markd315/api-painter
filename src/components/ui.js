@@ -96,41 +96,10 @@ AFRAME.registerComponent('ui', {
 
   initColorWheel: function () {
     var colorWheel = this.objects.hueWheel;
-
-    var vertexShader = '\
-      varying vec2 vUv;\
-      void main() {\
-        vUv = uv;\
-        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);\
-        gl_Position = projectionMatrix * mvPosition;\
-      }\
-      ';
-
-    var fragmentShader = '\
-      #define M_PI2 6.28318530718\n \
-      uniform float brightness;\
-      varying vec2 vUv;\
-      vec3 hsb2rgb(in vec3 c){\
-          vec3 rgb = clamp(abs(mod(c.x * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, \
-                           0.0, \
-                           1.0 );\
-          rgb = rgb * rgb * (3.0 - 2.0 * rgb);\
-          return c.z * mix( vec3(1.0), rgb, c.y);\
-      }\
-      \
-      void main() {\
-        vec2 toCenter = vec2(0.5) - vUv;\
-        float angle = atan(toCenter.y, toCenter.x);\
-        float radius = length(toCenter) * 2.0;\
-        vec3 color = hsb2rgb(vec3((angle / M_PI2) + 0.5, radius, brightness));\
-        gl_FragColor = vec4(color, 1.0);\
-      }\
-      ';
-
-    var material = new THREE.ShaderMaterial({
-      uniforms: { brightness: { type: 'f', value: this.hsv.v } },
-      vertexShader: vertexShader,
-      fragmentShader: fragmentShader
+    const loader = new THREE.TextureLoader();
+    const material = new THREE.MeshBasicMaterial({
+      //color: 0xFF8844,
+      map: loader.load('assets/images/ui-methods.png'),
     });
     colorWheel.material = material;
   },
@@ -174,10 +143,6 @@ AFRAME.registerComponent('ui', {
     if (this.activeWidget && this.activeWidget !== name) { return; }
     this.activeWidget = name;
     switch (true) {
-      case name === 'brightness': {
-        this.onBrightnessDown(position);
-        break;
-      }
       case name === 'brushnext': {
         if (!this.pressedObjects[name]) {
           this.nextPage();
@@ -312,78 +277,50 @@ AFRAME.registerComponent('ui', {
       theta: Math.PI + Math.atan2(-position.z, position.x)
     };
     var angle = ((polarPosition.theta * (180 / Math.PI)) + 180) % 360;
-    this.hsv.h = angle / 360;
-    this.hsv.s = polarPosition.r / radius;
-    this.updateColor();
+    this.updateColor(angle);
     this.playSound('ui_click0', 'hue');
   },
 
-  updateColor: function () {
-    var rgb = this.hsv2rgb(this.hsv);
-    var color = 'rgb(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ')';
+  updateColor: function (angle) {
+    this. section = Math.floor((angle+30) / 360 * 6);
+    if(this.section > 5){
+      this.section = 0;
+    }
+    switch(this.section){
+      case 0:
+        r = 182;
+        g = 6;
+        b = 255;
+        break;
+      case 1:
+        r = 255;
+        g = 46;
+        b = 8;
+        break;
+      case 2:
+        r = 255;
+        g = 181;
+        b = 9;
+        break;
+      case 3:
+        r = 102;
+        g = 255;
+        b = 0;
+        break;
+      case 4:
+        r = 0;
+        g = 255;
+        b = 218;
+        break;
+      case 5:
+        r = 3;
+        g = 57;
+        b = 255;
+        break;
+    }
+    var color = 'rgb(' + r + ', ' + g + ', ' + b + ')';
     this.handEl.setAttribute('brush', 'color', color);
     this.colorHasChanged = true;
-  },
-
-  hsv2rgb: function (hsv) {
-    var r, g, b, i, f, p, q, t;
-    var h = THREE.Math.clamp(hsv.h, 0, 1);
-    var s = THREE.Math.clamp(hsv.s, 0, 1);
-    var v = hsv.v;
-
-    i = Math.floor(h * 6);
-    f = h * 6 - i;
-    p = v * (1 - s);
-    q = v * (1 - f * s);
-    t = v * (1 - (1 - f) * s);
-    switch (i % 6) {
-      case 0: r = v; g = t; b = p; break;
-      case 1: r = q; g = v; b = p; break;
-      case 2: r = p; g = v; b = t; break;
-      case 3: r = p; g = q; b = v; break;
-      case 4: r = t; g = p; b = v; break;
-      case 5: r = v; g = p; b = q; break;
-    }
-    return {
-      r: Math.round(r * 255),
-      g: Math.round(g * 255),
-      b: Math.round(b * 255)
-    };
-  },
-
-  rgb2hsv: function (r, g, b) {
-    var max = Math.max(r, g, b);
-    var min = Math.min(r, g, b);
-    var d = max - min;
-    var h;
-    var s = (max === 0 ? 0 : d / max);
-    var v = max;
-
-    if (arguments.length === 1) { g = r.g; b = r.b; r = r.r; }
-
-    switch (max) {
-      case min: h = 0; break;
-      case r: h = (g - b) + d * (g < b ? 6 : 0); h /= 6 * d; break;
-      case g: h = (b - r) + d * 2; h /= 6 * d; break;
-      case b: h = (r - g) + d * 4; h /= 6 * d; break;
-    }
-    return {h: h, s: s, v: v};
-  },
-
-  onBrightnessDown: function (position) {
-    var slider = this.objects.brightnessSlider;
-    var sliderBoundingBox = slider.geometry.boundingBox;
-    var sliderHeight = sliderBoundingBox.max.z - sliderBoundingBox.min.z;
-    slider.updateMatrixWorld();
-    slider.worldToLocal(position);
-    var brightness = 1.0 - (position.z - sliderBoundingBox.min.z) / sliderHeight;
-    // remove object border padding
-    brightness = THREE.Math.clamp(brightness * 1.29 - 0.12, 0.0, 1.0);
-    this.objects.hueWheel.material.uniforms['brightness'].value = brightness;
-    this.objects.brightnessCursor.rotation.y = brightness * 1.5 - 1.5;
-    this.hsv.v = brightness;
-    this.updateColor();
-    this.playSound('ui_click0', 'brightness');
   },
 
   onBrushSizeBackgroundDown: function (position) {
@@ -584,7 +521,7 @@ AFRAME.registerComponent('ui', {
     this.initColorHistory();
     this.initBrushesMenu();
     this.setCursorTransparency();
-    this.updateColorUI(this.el.getAttribute('brush').color);
+    this.updateColorUI();
     this.updateSizeSlider(this.el.getAttribute('brush').size);
   },
 
@@ -804,7 +741,7 @@ AFRAME.registerComponent('ui', {
     if (!this.handEl || !this.objects) { return; }
     brush = this.handEl.getAttribute('brush');
     this.updateSizeSlider(brush.size);
-    this.updateColorUI(brush.color);
+    this.updateColorUI();
     this.updateColorHistory();
     // this.updateBrushSelector(brush.brush);
   },
@@ -846,20 +783,14 @@ AFRAME.registerComponent('ui', {
     cursor.scale.set(scale, 1, scale);
   },
 
-  updateColorUI: function (color) {
-    var colorRGB = new THREE.Color(color);
-    var hsv = this.hsv = this.rgb2hsv(colorRGB.r, colorRGB.g, colorRGB.b);
-    // Update color wheel
-    var angle = hsv.h * 2 * Math.PI;
-    var radius = hsv.s * this.colorWheelSize;
-    var x = radius * Math.cos(angle);
-    var y = radius * Math.sin(angle);
-    this.objects.hueCursor.position.setX(x);
-    this.objects.hueCursor.position.setZ(-y);
-
-    // Update color brightness
-    this.objects.hueWheel.material.uniforms['brightness'].value = this.hsv.v;
-    this.objects.brightnessCursor.rotation.y = this.hsv.v * 1.5 - 1.5;
+  updateColorUI: function () { 
+    // Update color wheel 
+    var angle = 30;  
+    var radius = 0.5 * this.colorWheelSize; 
+    var x = radius * Math.cos(angle); 
+    var y = radius * Math.sin(angle); 
+    this.objects.hueCursor.position.setX(x);  
+    this.objects.hueCursor.position.setZ(-y); 
   },
 
   updateBrushSelector: function (brush) {
