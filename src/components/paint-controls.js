@@ -7,7 +7,7 @@ AFRAME.registerComponent('paint-controls', {
   dependencies: ['brush'],
 
   schema: {
-    hand: {default: 'left'}
+    hand: { default: 'left' }
   },
 
   init: function () {
@@ -20,6 +20,16 @@ AFRAME.registerComponent('paint-controls', {
 
     this.onModelLoaded = this.onModelLoaded.bind(this);
     el.addEventListener('model-loaded', this.onModelLoaded);
+
+    el.addEventListener('spawn-box', function (evt) {
+      var geometry = new THREE.BoxBufferGeometry(3, 5, 2); //w, h, d
+      var material = new THREE.MeshStandardMaterial({ color: '#2277ff' });
+      var mesh = new THREE.Mesh(geometry, material);
+      // Set mesh on entity.
+      el.setObject3D('mesh', mesh);
+      entity.className = 'templateitem';
+      document.querySelector('a-scene').appendChild(entity);
+    });
 
     el.addEventListener('changeBrushSizeAbs', function (evt) {
       if (evt.detail.axis[0] === 0 && evt.detail.axis[1] === 0 || self.previousAxis === evt.detail.axis[1]) { return; }
@@ -59,14 +69,11 @@ AFRAME.registerComponent('paint-controls', {
 
     el.addEventListener('controllerconnected', function (evt) {
       var controllerName = evt.detail.name;
-      if (controllerName === 'windows-motion-controls')
-      {
+      if (controllerName === 'windows-motion-controls') {
         var gltfName = evt.detail.component.el.components['gltf-model'].data;
         const SAMSUNG_DEVICE = '045E-065D';
-        if (!!gltfName)
-        {
-          if (gltfName.indexOf(SAMSUNG_DEVICE) >= 0)
-          {
+        if (!!gltfName) {
+          if (gltfName.indexOf(SAMSUNG_DEVICE) >= 0) {
             controllerName = "windows-motion-samsung-controls";
           }
         }
@@ -78,9 +85,9 @@ AFRAME.registerComponent('paint-controls', {
       } else if (controllerName === 'oculus-touch-controls') {
         var hand = evt.detail.component.data.hand;
         //el.setAttribute('teleport-controls', {button: hand === 'left' ? 'ybutton' : 'bbutton'});
-        el.setAttribute('obj-model', {obj: 'assets/models/oculus-' + hand + '-controller.obj', mtl: 'https://cdn.aframe.io/controllers/oculus/oculus-touch-controller-' + hand + '.mtl'});
+        el.setAttribute('obj-model', { obj: 'assets/models/oculus-' + hand + '-controller.obj', mtl: 'https://cdn.aframe.io/controllers/oculus/oculus-touch-controller-' + hand + '.mtl' });
       } else if (controllerName === 'vive-controls') {
-        el.setAttribute('json-model', {src: 'assets/models/controller_vive.json'});
+        el.setAttribute('json-model', { src: 'assets/models/controller_vive.json' });
       } else { return; }
 
       if (!!tooltips) {
@@ -95,12 +102,12 @@ AFRAME.registerComponent('paint-controls', {
     el.addEventListener('brushsize-changed', function (evt) { self.changeBrushSize(evt.detail.size); });
     el.addEventListener('brushcolor-changed', function (evt) { self.changeBrushColor(evt.detail.color); });
 
-    function createTexture (texture) {
+    function createTexture(texture) {
       var material = self.highLightMaterial = new THREE.MeshBasicMaterial();
       material.map = texture;
       material.needsUpdate = true;
     }
-    el.sceneEl.systems.material.loadTexture(highLightTextureUrl, {src: highLightTextureUrl}, createTexture);
+    el.sceneEl.systems.material.loadTexture(highLightTextureUrl, { src: highLightTextureUrl }, createTexture);
 
     this.startAxis = 0;
 
@@ -118,7 +125,7 @@ AFRAME.registerComponent('paint-controls', {
         var object = { opacity: 1.0 };
 
         var tween = new AFRAME.TWEEN.Tween(object)
-          .to({opacity: 0.0}, 1000)
+          .to({ opacity: 0.0 }, 1000)
           .onComplete(function () {
             tooltips.forEach(function (tooltip) {
               tooltip.setAttribute('visible', false);
@@ -127,7 +134,7 @@ AFRAME.registerComponent('paint-controls', {
           .delay(2000)
           .onUpdate(function () {
             tooltips.forEach(function (tooltip) {
-              tooltip.setAttribute('tooltip', {opacity: object.opacity});
+              tooltip.setAttribute('tooltip', { opacity: object.opacity });
             });
           });
         tween.start();
@@ -168,9 +175,9 @@ AFRAME.registerComponent('paint-controls', {
   update: function () {
     var data = this.data;
     var el = this.el;
-    el.setAttribute('vive-controls', {hand: data.hand, model: false});
-    el.setAttribute('oculus-touch-controls', {hand: data.hand, model: false});
-    el.setAttribute('windows-motion-controls', {hand: data.hand});
+    el.setAttribute('vive-controls', { hand: data.hand, model: false });
+    el.setAttribute('oculus-touch-controls', { hand: data.hand, model: false });
+    el.setAttribute('windows-motion-controls', { hand: data.hand });
   },
 
   play: function () {
@@ -184,7 +191,7 @@ AFRAME.registerComponent('paint-controls', {
 
     var controllerObject3D = evt.detail.model;
     var buttonMeshes;
-    
+
     buttonMeshes = this.buttonMeshes = {};
 
     buttonMeshes.sizeHint = controllerObject3D.getObjectByName('sizehint');
